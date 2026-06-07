@@ -1,50 +1,60 @@
 // =====================================================================
 // MECS0023 DATA STRUCTURE & ALGORITHM - MINI PROJECT
-// E-Learning Dashboard using events.txt
+// E-Learning Dashboard using events.csv
 //
-// Entry point: loads events from events.txt and runs the menu loop.
+// Entry point: loads events from events.csv and runs the menu loop.
 // =====================================================================
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "dashboard.h"
 #include "date.h"
 #include "event.h"
+#include "rapidcsv.h"
 
-// ---------------------- Load from events.txt --------------------------
+// ---------------------- Load from events.csv --------------------------
+// CSV columns: title,subject,type,day,month,year,completed
+// The "completed" column is optional (defaults to not completed).
 void loadEventsFromFile(Dashboard& dash) {
-    std::ifstream fin("events.txt");
+    std::ifstream probe("events.csv");
 
-    if (!fin) {
-        std::cout << "events.txt not found.\n";
-        std::cout << "Please create events.txt in the same folder as main.cpp.\n";
+    if (!probe) {
+        std::cout << "events.csv not found.\n";
+        std::cout << "It will be created when you add or save events.\n";
         return;
     }
+    probe.close();
 
-    std::string title;
-    std::string subject;
-    std::string type;
-    std::string dayText;
-    std::string monthText;
-    std::string yearText;
+    rapidcsv::Document doc("events.csv", rapidcsv::LabelParams(0, -1));
 
-    while (std::getline(fin, title, ';')) {
-        std::getline(fin, subject, ';');
-        std::getline(fin, type, ';');
-        std::getline(fin, dayText, ';');
-        std::getline(fin, monthText, ';');
-        std::getline(fin, yearText);
+    std::vector<std::string> columns = doc.GetColumnNames();
+    bool hasCompleted =
+        std::find(columns.begin(), columns.end(), "completed") != columns.end();
 
-        int day = std::stoi(dayText);
-        int month = std::stoi(monthText);
-        int year = std::stoi(yearText);
+    for (std::size_t i = 0; i < doc.GetRowCount(); i++) {
+        try {
+            Event e(doc.GetCell<std::string>("title", i),
+                    doc.GetCell<std::string>("subject", i),
+                    doc.GetCell<std::string>("type", i),
+                    Date(doc.GetCell<int>("day", i),
+                         doc.GetCell<int>("month", i),
+                         doc.GetCell<int>("year", i)));
 
-        dash.addEvent(Event(title, subject, type, Date(day, month, year)));
+            if (hasCompleted) {
+                e.setCompleted(doc.GetCell<int>("completed", i) == 1);
+            }
+
+            dash.addEvent(e);
+        } catch (const std::exception&) {
+            continue;  // skip malformed rows
+        }
     }
 
-    std::cout << "Events loaded from events.txt.\n";
+    std::cout << "Events loaded from events.csv.\n";
 }
 
 // ----------------------------- main ----------------------------------
@@ -129,7 +139,7 @@ int main() {
             dash.addEvent(Event(title, subject, type, Date(day, month, year)));
             dash.saveEventsToFile();
 
-            std::cout << "Event added and saved to events.txt.\n";
+            std::cout << "Event added and saved to events.csv.\n";
             break;
         }
         case 5: {
@@ -154,7 +164,7 @@ int main() {
             dash.amendEvent(title, Date(day, month, year));
             dash.saveEventsToFile();
 
-            std::cout << "events.txt updated.\n";
+            std::cout << "events.csv updated.\n";
             break;
         }
         case 6: {
@@ -166,7 +176,7 @@ int main() {
             dash.markComplete(title);
             dash.saveEventsToFile();
 
-            std::cout << "events.txt updated.\n";
+            std::cout << "events.csv updated.\n";
             break;
         }
         case 7: {
@@ -190,7 +200,7 @@ int main() {
         }
         case 10: {
             dash.saveEventsToFile();
-            std::cout << "Events saved to events.txt. Goodbye!\n";
+            std::cout << "Events saved to events.csv. Goodbye!\n";
             break;
         }
         default: {
