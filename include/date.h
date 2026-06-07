@@ -28,7 +28,8 @@ public:
 
     int compareTo(const Date& other) const;
     void display() const;
-    std::string weekday() const;  // e.g. "Saturday"
+    std::string toString() const;  // "dd/mm/yyyy"
+    std::string weekday() const;   // e.g. "Saturday"
 
     // True if this is a real calendar date (e.g. rejects 31 Feb).
     bool isValid() const;

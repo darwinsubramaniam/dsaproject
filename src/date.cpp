@@ -42,8 +42,12 @@ int Date::compareTo(const Date& other) const {
     return (a > b) - (a < b);
 }
 
+std::string Date::toString() const {
+    return std::format("{:%d/%m/%Y}", ymd);
+}
+
 void Date::display() const {
-    std::cout << std::format("{:%d/%m/%Y}", ymd);
+    std::cout << toString();
 }
 
 bool Date::isValid() const {

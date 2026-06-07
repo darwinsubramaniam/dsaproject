@@ -6,48 +6,67 @@
 // =====================================================================
 
 #include <iostream>
-#include <limits>
 #include <string>
+#include <vector>
 
 #include "dashboard.h"
 #include "date.h"
 #include "event.h"
 #include "store.h"
+#include "ui.h"
 
-// Read an integer, re-prompting on non-numeric input. Returns false only when
-// the input stream is closed (Ctrl+D / end of a pipe); the caller should then
-// exit. (Ctrl+C terminates the program directly.)
-bool readInt(const std::string& prompt, int& value) {
+// Outcome of a cancellable prompt.
+enum class Input { Ok, Cancel, Closed };
+
+// Read a line of text. An empty line cancels; a closed stream (Ctrl+D) ends.
+Input readLine(const std::string& prompt, std::string& out) {
+    std::cout << prompt;
+    if (!std::getline(std::cin, out)) {
+        return Input::Closed;
+    }
+    if (out.empty()) {
+        return Input::Cancel;
+    }
+    return Input::Ok;
+}
+
+// Read an integer, re-prompting on non-numeric input. An empty line cancels;
+// a closed stream ends. (Ctrl+C terminates the program directly.)
+Input readInt(const std::string& prompt, int& value) {
     while (true) {
+        std::string line;
         std::cout << prompt;
-
-        if (std::cin >> value) {
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            return true;
+        if (!std::getline(std::cin, line)) {
+            return Input::Closed;
         }
-
-        if (std::cin.eof()) {
-            return false;
+        if (line.empty()) {
+            return Input::Cancel;
         }
-
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        std::cout << "You entered wrong input. Please enter a number.\n";
+        try {
+            std::size_t pos = 0;
+            value = std::stoi(line, &pos);
+            return Input::Ok;
+        } catch (const std::exception&) {
+            std::cout << "You entered wrong input. Please enter a number.\n";
+        }
     }
 }
 
-// Prompt for a day/month/year and build a Date. Returns false on closed input.
-bool readDate(const std::string& label, Date& out) {
+// Prompt for a day/month/year and build a Date. Propagates cancel/close.
+Input readDate(const std::string& label, Date& out) {
     int day = 0;
     int month = 0;
     int year = 0;
 
-    if (!readInt(label + " day: ", day)) return false;
-    if (!readInt(label + " month: ", month)) return false;
-    if (!readInt(label + " year: ", year)) return false;
+    Input r = readInt(label + " day (blank to cancel): ", day);
+    if (r != Input::Ok) return r;
+    r = readInt(label + " month: ", month);
+    if (r != Input::Ok) return r;
+    r = readInt(label + " year: ", year);
+    if (r != Input::Ok) return r;
 
     out = Date(day, month, year);
-    return true;
+    return Input::Ok;
 }
 
 // ----------------------------- main ----------------------------------
@@ -57,35 +76,46 @@ int main() {
 
     store::load(dash);
 
+    const std::vector<std::string> menuOptions = {
+        "View Timeline (sorted by due date)",
+        "View Calendar (grouped by date)",
+        "Search Event",
+        "Add Event",
+        "Amend Event (change due date)",
+        "Delete Event",
+        "Mark Event Complete",
+        "View Reminders (queue)",
+        "View Overdue Alerts (stack)",
+        "Sort Events (date / subject / status)",
+        "Progress Report (completed vs pending)",
+        "Exit",
+    };
+
     bool running = true;
 
-    while (running) {
-        int choice = 0;
-
-        std::cout << "\n==========================================\n";
-        std::cout << "          E-LEARNING DASHBOARD\n";
-        std::cout << "==========================================\n";
-        std::cout << " -- Retrieve Event Information --\n";
-        std::cout << " 1. View Timeline (sorted by due date)\n";
-        std::cout << " 2. View Calendar (grouped by date)\n";
-        std::cout << " 3. Search Event\n";
-        std::cout << " -- Update Event Information --\n";
-        std::cout << " 4. Add Event\n";
-        std::cout << " 5. Amend Event (change due date)\n";
-        std::cout << " 6. Delete Event\n";
-        std::cout << " -- Manage Event Status --\n";
-        std::cout << " 7. Mark Event Complete\n";
-        std::cout << " 8. View Reminders (queue)\n";
-        std::cout << " 9. View Overdue Alerts (stack)\n";
-        std::cout << " -- Sort Event --\n";
-        std::cout << "10. Sort Events (date / subject / status)\n";
-        std::cout << " -- Reports --\n";
-        std::cout << "11. Progress Report (completed vs pending)\n";
-        std::cout << "12. Exit\n";
-        std::cout << "------------------------------------------\n";
-        if (!readInt(" Enter your choice (1-12): ", choice)) {
-            break;  // input stream closed (Ctrl+D)
+    // Handle a cancellable prompt result: returns true if the current action
+    // should be aborted (user pressed Enter on an empty line, or input closed).
+    auto aborted = [&running](Input r) -> bool {
+        if (r == Input::Closed) {
+            running = false;
+            return true;
         }
+        if (r == Input::Cancel) {
+            std::cout << "Cancelled.\n";
+            return true;
+        }
+        return false;
+    };
+
+    while (running) {
+        ui::clearScreen();  // keep a single menu in place instead of scrolling
+
+        int picked = ui::menu("E-LEARNING DASHBOARD", menuOptions);
+        if (picked < 0) {
+            picked = 11;  // q/Esc cancels the menu -> treat as Exit
+        }
+
+        const int choice = picked + 1;  // cases below are numbered 1..12
 
         switch (choice) {
         case 1: {
@@ -100,9 +130,10 @@ int main() {
         }
         case 3: {
             std::string keyword;
-
-            std::cout << "Enter title or subject: ";
-            std::getline(std::cin, keyword);
+            if (aborted(readLine("Enter title or subject (blank to cancel): ",
+                                 keyword))) {
+                break;
+            }
 
             dash.searchEvent(keyword);
             break;
@@ -112,20 +143,12 @@ int main() {
             std::string subject;
             std::string type;
 
-            std::cout << "Title: ";
-            std::getline(std::cin, title);
-
-            std::cout << "Subject: ";
-            std::getline(std::cin, subject);
-
-            std::cout << "Type: ";
-            std::getline(std::cin, type);
+            if (aborted(readLine("Title (blank to cancel): ", title))) break;
+            if (aborted(readLine("Subject: ", subject))) break;
+            if (aborted(readLine("Type: ", type))) break;
 
             Date dueDate;
-            if (!readDate("Due", dueDate)) {
-                running = false;
-                break;
-            }
+            if (aborted(readDate("Due", dueDate))) break;
 
             if (!dueDate.isValid()) {
                 std::cout << "Invalid date. Event not added.\n";
@@ -139,16 +162,22 @@ int main() {
             break;
         }
         case 5: {
-            std::string title;
-
-            std::cout << "Enter event title to amend: ";
-            std::getline(std::cin, title);
-
-            Date newDate;
-            if (!readDate("New due", newDate)) {
-                running = false;
+            std::vector<Event> events = dash.events();
+            if (events.empty()) {
+                std::cout << "No events to amend.\n";
                 break;
             }
+
+            int idx = ui::selectEvent("Select an event to AMEND:", events, today);
+            if (idx < 0) {
+                std::cout << "Cancelled.\n";
+                break;
+            }
+
+            const std::string title = events[idx].title;
+
+            Date newDate;
+            if (aborted(readDate("New due", newDate))) break;
 
             if (!newDate.isValid()) {
                 std::cout << "Invalid date. Amendment cancelled.\n";
@@ -162,28 +191,38 @@ int main() {
             break;
         }
         case 6: {
-            std::string title;
-
-            std::cout << "Enter event title to delete: ";
-            std::getline(std::cin, title);
-
-            if (dash.deleteEvent(title)) {
-                store::save(dash);
-                std::cout << "Event deleted and events.csv updated.\n";
-            } else {
-                std::cout << "Event not found.\n";
+            std::vector<Event> events = dash.events();
+            if (events.empty()) {
+                std::cout << "No events to delete.\n";
+                break;
             }
+
+            int idx = ui::selectEvent("Select an event to DELETE:", events, today);
+            if (idx < 0) {
+                std::cout << "Cancelled.\n";
+                break;
+            }
+
+            dash.deleteEvent(events[idx].title);
+            store::save(dash);
+            std::cout << "Event deleted and events.csv updated.\n";
             break;
         }
         case 7: {
-            std::string title;
+            std::vector<Event> events = dash.events();
+            if (events.empty()) {
+                std::cout << "No events to mark complete.\n";
+                break;
+            }
 
-            std::cout << "Enter event title to mark complete: ";
-            std::getline(std::cin, title);
+            int idx = ui::selectEvent("Select an event to MARK COMPLETE:", events, today);
+            if (idx < 0) {
+                std::cout << "Cancelled.\n";
+                break;
+            }
 
-            dash.markComplete(title);
+            dash.markComplete(events[idx].title);
             store::save(dash);
-
             std::cout << "events.csv updated.\n";
             break;
         }
@@ -197,14 +236,16 @@ int main() {
             break;
         }
         case 10: {
-            int sortChoice = 0;
+            const std::vector<std::string> sortOptions = {
+                "By Due Date", "By Subject", "By Status"};
 
-            if (!readInt("Sort by 1. Date  2. Subject  3. Status: ", sortChoice)) {
-                running = false;
+            int sortPick = ui::menu("Sort events:", sortOptions);
+            if (sortPick < 0) {
+                std::cout << "Cancelled.\n";
                 break;
             }
 
-            dash.sortEvents(sortChoice, today);
+            dash.sortEvents(sortPick + 1, today);  // sortEvents expects 1/2/3
             break;
         }
         case 11: {
@@ -224,19 +265,12 @@ int main() {
         }
         }
 
-        // After each action, ask whether to stay in the dashboard.
-        // Anything other than 'y' (including just Enter) exits.
-        if (running) {
-            std::cout << "\nContinue using the dashboard? (y/N): ";
-
-            std::string answer;
-            std::getline(std::cin, answer);
-
-            if (answer.empty() || (answer[0] != 'y' && answer[0] != 'Y')) {
-                store::save(dash);
-                std::cout << "Events saved to events.csv. Goodbye!\n";
-                running = false;
-            }
+        // Let the user read the output before the menu redraws. (Only in an
+        // interactive terminal; pipes/tests just continue.)
+        if (running && ui::interactive()) {
+            std::cout << "\nPress Enter to return to the menu...";
+            std::string dummy;
+            std::getline(std::cin, dummy);
         }
     }
 
