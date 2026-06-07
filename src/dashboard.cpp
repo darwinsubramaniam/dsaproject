@@ -1,9 +1,9 @@
 #include "dashboard.h"
 
-#include <fstream>
 #include <iostream>
 
 #include "constants.h"
+#include "rapidcsv.h"
 
 void Dashboard::printPadded(const std::string& text, int width) const {
     std::cout << text;
@@ -102,7 +102,8 @@ void Dashboard::checkDeadlines(const Date& today) {
     Node* current = head;
 
     while (current != nullptr) {
-        if (current->data.getStatus(today) == "Past Deadline" &&
+        if (!current->data.isCompleted() &&
+            current->data.getStatus(today) == "Past Deadline" &&
             !alerts.contains(current->data.getTitle())) {
             alerts.push(current->data.getTitle());
         }
@@ -192,11 +193,27 @@ void Dashboard::searchEvent(const std::string& keyword) const {
 }
 
 void Dashboard::markComplete(const std::string& title) {
-    if (deleteEvent(title)) {
-        std::cout << "Event marked complete and removed.\n";
-    } else {
-        std::cout << "Event not found.\n";
+    Node* current = head;
+
+    while (current != nullptr) {
+        if (current->data.getTitle() == title) {
+            if (current->data.isCompleted()) {
+                std::cout << "Event is already completed.\n";
+                return;
+            }
+
+            // Keep the event for traceability; just flag it and stop
+            // reminding about it.
+            current->data.setCompleted(true);
+            reminders.clear(title);
+            std::cout << "Event marked complete.\n";
+            return;
+        }
+
+        current = current->next;
     }
+
+    std::cout << "Event not found.\n";
 }
 
 void Dashboard::showReminders() const {
@@ -266,26 +283,37 @@ void Dashboard::sortEvents(int choice, const Date& today) const {
 }
 
 void Dashboard::saveEventsToFile() const {
-    std::ofstream fout("events.txt");
+    // Build an in-memory CSV document (row 0 holds the column names) and let
+    // rapidcsv handle quoting/escaping on write.
+    rapidcsv::Document doc(std::string(), rapidcsv::LabelParams(0, -1));
+    doc.SetColumnName(0, "title");
+    doc.SetColumnName(1, "subject");
+    doc.SetColumnName(2, "type");
+    doc.SetColumnName(3, "day");
+    doc.SetColumnName(4, "month");
+    doc.SetColumnName(5, "year");
+    doc.SetColumnName(6, "completed");
 
-    if (!fout) {
-        std::cout << "Error: Cannot save events.txt.\n";
-        return;
-    }
+    int row = 0;
 
-    Node* current = head;
-
-    while (current != nullptr) {
+    for (Node* current = head; current != nullptr; current = current->next) {
         const Event& e = current->data;
         const Date& d = e.getDueDate();
 
-        fout << e.getTitle() << ";"
-             << e.getSubject() << ";"
-             << e.getType() << ";"
-             << d.getDay() << ";"
-             << d.getMonth() << ";"
-             << d.getYear() << "\n";
+        doc.SetCell<std::string>(0, row, e.getTitle());
+        doc.SetCell<std::string>(1, row, e.getSubject());
+        doc.SetCell<std::string>(2, row, e.getType());
+        doc.SetCell<int>(3, row, d.getDay());
+        doc.SetCell<int>(4, row, d.getMonth());
+        doc.SetCell<int>(5, row, d.getYear());
+        doc.SetCell<int>(6, row, e.isCompleted() ? 1 : 0);
 
-        current = current->next;
+        row++;
+    }
+
+    try {
+        doc.Save("events.csv");
+    } catch (const std::exception&) {
+        std::cout << "Error: Cannot save events.csv.\n";
     }
 }

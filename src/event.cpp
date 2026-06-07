@@ -13,9 +13,17 @@ const std::string& Event::getType() const { return type; }
 
 const Date& Event::getDueDate() const { return dueDate; }
 
+bool Event::isCompleted() const { return completed; }
+
 void Event::setDueDate(const Date& d) { dueDate = d; }
 
+void Event::setCompleted(bool value) { completed = value; }
+
 std::string Event::getStatus(const Date& today) const {
+    if (completed) {
+        return "Completed";
+    }
+
     long diff = dueDate.toDayNumber() - today.toDayNumber();
 
     if (diff < 0) {
@@ -27,7 +35,13 @@ std::string Event::getStatus(const Date& today) const {
     }
 }
 
+// Ordering key for "sort by status": overdue (0) first, then upcoming (1),
+// then completed (2) last.
 int Event::statusRank(const Date& today) const {
+    if (completed) {
+        return 2;
+    }
+
     long diff = dueDate.toDayNumber() - today.toDayNumber();
 
     if (diff < 0) {

@@ -12,6 +12,7 @@ private:
     std::string subject;
     std::string type;
     Date dueDate;
+    bool completed = false;
 
 public:
     Event() = default;
@@ -21,8 +22,10 @@ public:
     const std::string& getSubject() const;
     const std::string& getType() const;
     const Date& getDueDate() const;
+    bool isCompleted() const;
 
     void setDueDate(const Date& d);
+    void setCompleted(bool value);
 
     std::string getStatus(const Date& today) const;
     int statusRank(const Date& today) const;
