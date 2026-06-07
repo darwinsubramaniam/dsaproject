@@ -1,5 +1,5 @@
 CXX       := g++
-CXXFLAGS  := -std=c++17 -Wall -Wextra -Wpedantic -Iinclude -isystem third_party -MMD -MP
+CXXFLAGS  := -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -isystem third_party -MMD -MP
 
 SRC_DIR   := src
 BUILD_DIR := obj

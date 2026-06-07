@@ -1,5 +1,6 @@
 #include "date.h"
 
+#include <chrono>
 #include <iostream>
 
 Date::Date(int d, int m, int y) : day(d), month(m), year(y) {}
@@ -14,17 +15,14 @@ long Date::toKey() const {
     return static_cast<long>(year) * 10000 + month * 100 + day;
 }
 
-// Exact count of days since the civil epoch (1970-01-01), accounting for
-// leap years and varying month lengths. Based on Howard Hinnant's
-// days_from_civil algorithm. Used for accurate date differences.
+// Exact count of days since the civil epoch (1970-01-01), via the C++20
+// chrono calendar. Used for accurate date differences.
 long Date::toDayNumber() const {
-    int y = year - (month <= 2);
-    const int era = (y >= 0 ? y : y - 399) / 400;
-    const unsigned yoe = static_cast<unsigned>(y - era * 400);            // [0, 399]
-    const unsigned doy = (153 * (month > 2 ? month - 3 : month + 9) + 2) / 5
-                         + day - 1;                                       // [0, 365]
-    const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;          // [0, 146096]
-    return static_cast<long>(era) * 146097 + static_cast<long>(doe) - 719468;
+    using namespace std::chrono;
+    const year_month_day ymd{std::chrono::year{year},
+                             std::chrono::month{static_cast<unsigned>(month)},
+                             std::chrono::day{static_cast<unsigned>(day)}};
+    return sys_days{ymd}.time_since_epoch().count();
 }
 
 int Date::compareTo(const Date& other) const {
