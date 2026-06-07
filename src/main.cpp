@@ -67,15 +67,16 @@ int main() {
         std::cout << " -- Update Event Information --\n";
         std::cout << " 4. Add Event\n";
         std::cout << " 5. Amend Event (change due date)\n";
+        std::cout << " 6. Delete Event\n";
         std::cout << " -- Manage Event Status --\n";
-        std::cout << " 6. Mark Event Complete\n";
-        std::cout << " 7. View Reminders (queue)\n";
-        std::cout << " 8. View Overdue Alerts (stack)\n";
+        std::cout << " 7. Mark Event Complete\n";
+        std::cout << " 8. View Reminders (queue)\n";
+        std::cout << " 9. View Overdue Alerts (stack)\n";
         std::cout << " -- Sort Event --\n";
-        std::cout << " 9. Sort Events (date / subject / status)\n";
-        std::cout << "10. Exit\n";
+        std::cout << "10. Sort Events (date / subject / status)\n";
+        std::cout << "11. Exit\n";
         std::cout << "------------------------------------------\n";
-        std::cout << " Enter your choice (1-10): ";
+        std::cout << " Enter your choice (1-11): ";
         std::cin >> choice;
         std::cin.ignore();
 
@@ -160,6 +161,20 @@ int main() {
         case 6: {
             std::string title;
 
+            std::cout << "Enter event title to delete: ";
+            std::getline(std::cin, title);
+
+            if (dash.deleteEvent(title)) {
+                dash.saveEventsToFile();
+                std::cout << "Event deleted and events.txt updated.\n";
+            } else {
+                std::cout << "Event not found.\n";
+            }
+            break;
+        }
+        case 7: {
+            std::string title;
+
             std::cout << "Enter event title to mark complete: ";
             std::getline(std::cin, title);
 
@@ -169,16 +184,16 @@ int main() {
             std::cout << "events.txt updated.\n";
             break;
         }
-        case 7: {
+        case 8: {
             dash.showReminders();
             break;
         }
-        case 8: {
+        case 9: {
             dash.checkDeadlines(today);
             dash.showOverdue();
             break;
         }
-        case 9: {
+        case 10: {
             int sortChoice = 0;
 
             std::cout << "Sort by 1. Date  2. Subject  3. Status: ";
@@ -188,18 +203,18 @@ int main() {
             dash.sortEvents(sortChoice, today);
             break;
         }
-        case 10: {
+        case 11: {
             dash.saveEventsToFile();
             std::cout << "Events saved to events.txt. Goodbye!\n";
             break;
         }
         default: {
-            std::cout << "Invalid choice. Please enter 1 to 10.\n";
+            std::cout << "Invalid choice. Please enter 1 to 11.\n";
             break;
         }
         }
 
-    } while (choice != 10);
+    } while (choice != 11);
 
     return 0;
 }
