@@ -108,6 +108,8 @@ int main() {
     };
 
     while (running) {
+        ui::clearScreen();  // keep a single menu in place instead of scrolling
+
         int picked = ui::menu("E-LEARNING DASHBOARD", menuOptions);
         if (picked < 0) {
             picked = 11;  // q/Esc cancels the menu -> treat as Exit

@@ -127,6 +127,14 @@ bool ui::interactive() {
     return STDIN_IS_TTY;
 }
 
+void ui::clearScreen() {
+    if (!STDIN_IS_TTY) {
+        return;
+    }
+    // Clear the screen and scrollback, then move the cursor to the top-left.
+    std::cout << "\033[2J\033[3J\033[H" << std::flush;
+}
+
 int ui::menu(const std::string& heading, const std::vector<std::string>& options) {
     return runMenu(heading, "", options);
 }

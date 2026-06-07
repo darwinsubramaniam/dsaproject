@@ -12,6 +12,10 @@ namespace ui {
 // True when stdin is an interactive terminal (so the arrow-key UI is usable).
 bool interactive();
 
+// Clear the terminal (and scrollback) so the menu redraws in place instead of
+// scrolling down the console. No-op when stdin is not a terminal.
+void clearScreen();
+
 // Arrow-key menu over `options`. Returns the chosen index, or -1 on q/Esc.
 // Falls back to a numbered prompt when stdin is not a terminal.
 int menu(const std::string& heading, const std::vector<std::string>& options);
