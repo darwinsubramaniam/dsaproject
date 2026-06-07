@@ -2,6 +2,7 @@
 #define DATE_H
 
 #include <chrono>
+#include <string>
 
 // ------------------------- class Date --------------------------------
 // Calendar date backed by std::chrono::year_month_day (C++20), so the
@@ -27,6 +28,7 @@ public:
 
     int compareTo(const Date& other) const;
     void display() const;
+    std::string weekday() const;  // e.g. "Saturday"
 
     // True if this is a real calendar date (e.g. rejects 31 Feb).
     bool isValid() const;

@@ -49,3 +49,8 @@ void Date::display() const {
 bool Date::isValid() const {
     return ymd.ok();
 }
+
+std::string Date::weekday() const {
+    const std::chrono::weekday wd{std::chrono::sys_days{ymd}};
+    return std::format("{:%A}", wd);
+}

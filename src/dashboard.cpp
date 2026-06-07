@@ -147,20 +147,24 @@ void Dashboard::displayCalendar() const {
 
     Node* current = head;
     long lastDate = -1;
+    int itemNo = 0;
 
     while (current != nullptr) {
-        long currentDate = current->data.dueDate.toKey();
+        const Event& e = current->data;
+        long currentDate = e.dueDate.toKey();
 
         if (currentDate != lastDate) {
-            std::cout << "\n[ ";
-            current->data.dueDate.display();
-            std::cout << " ]\n";
+            std::cout << "\n" << e.dueDate.weekday() << ", ";
+            e.dueDate.display();
+            std::cout << "\n";
             lastDate = currentDate;
+            itemNo = 0;
         }
 
-        std::cout << "- " << current->data.title
-                  << " [" << current->data.type << "] "
-                  << current->data.subject << "\n";
+        itemNo++;
+        std::cout << "   " << itemNo << ". Title  : " << e.title << "\n"
+                  << "      Subject: " << e.subject << "\n"
+                  << "      Type   : " << e.type << "\n";
 
         current = current->next;
     }
