@@ -1,0 +1,10 @@
+# Build output
+/build/
+/dashboard
+
+# Object/dependency files
+*.o
+*.d
+
+# Runtime data written by the program
+events.txt
