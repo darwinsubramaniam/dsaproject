@@ -1,32 +1,25 @@
-CXX       := g++
-CXXFLAGS  := -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -isystem third_party -MMD -MP
+# This project depends on FTXUI, which is a CMake library pulled in via
+# FetchContent. Building it by hand is impractical, so the Makefile simply
+# delegates to CMake. The first build downloads and compiles FTXUI.
 
-SRC_DIR   := src
-BUILD_DIR := obj
-TARGET    := dashboard
+BUILD_DIR := build
+TARGET    := $(BUILD_DIR)/dashboard
 
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
-OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
-DEPS := $(OBJS:.o=.d)
+.PHONY: all release run clean
 
-.PHONY: all clean run
+# Default: fast, unoptimized build for quick iteration. The empty build type is
+# set explicitly so `make` reverts cleanly after a `make release`.
+all:
+	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=
+	cmake --build $(BUILD_DIR)
 
-all: $(TARGET)
+# Optimized, size-minimized build (LTO + dead-strip). Slower to build.
+release:
+	cmake -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release
+	cmake --build $(BUILD_DIR)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-
-run: $(TARGET)
+run: all
 	./$(TARGET)
 
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
-
-# Auto-generated header dependencies (-MMD); rebuilds when a header changes.
--include $(DEPS)
+	rm -rf $(BUILD_DIR)

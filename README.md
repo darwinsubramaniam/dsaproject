@@ -11,8 +11,14 @@ The data structures are hand-rolled on purpose (the point of the assignment):
 - **Stack** — overdue alerts (`OverdueStack`)
 - **Selection sort** — sort events by date / subject / status
 
-CSV reading/writing uses the vendored, header-only
-[rapidcsv](https://github.com/d99kris/rapidcsv) library.
+Third-party libraries:
+
+- [rapidcsv](https://github.com/d99kris/rapidcsv) — vendored single header
+  (`third_party/`), used for `events.csv` reading/writing.
+- [FTXUI](https://github.com/ArthurSonzogni/FTXUI) — terminal UI, fetched and
+  built automatically by CMake. Powers the arrow-key event picker used by
+  Amend / Delete / Mark Complete (falls back to a numbered prompt when stdin
+  isn't a terminal).
 
 ## Layout
 
@@ -25,43 +31,57 @@ CSV reading/writing uses the vendored, header-only
 │   ├── node.h
 │   ├── reminder_queue.h
 │   ├── overdue_stack.h
-│   └── dashboard.h
+│   ├── dashboard.h
+│   ├── store.h         # events.csv persistence
+│   └── ui.h            # interactive event picker (FTXUI)
 ├── src/                # implementations
 │   ├── date.cpp
 │   ├── event.cpp
 │   ├── reminder_queue.cpp
 │   ├── overdue_stack.cpp
 │   ├── dashboard.cpp
-│   └── main.cpp        # file loading + menu loop
+│   ├── store.cpp
+│   ├── ui.cpp
+│   └── main.cpp        # menu loop
 ├── third_party/        # vendored dependencies
 │   └── rapidcsv.h      # single-header CSV library (BSD-3-Clause)
 ├── CMakeLists.txt      # cross-platform build (Windows / macOS / Linux)
-└── Makefile            # convenience build for Unix-like shells
+└── Makefile            # convenience wrapper that delegates to CMake
 ```
 
 ## Build & run
 
-### CMake (recommended — works on Windows, macOS, Linux)
+Requires a **C++20** compiler. The first build downloads and compiles FTXUI
+(needs network access once); subsequent builds are incremental.
+
+The **default build is unoptimized** for fast iteration. A **Release** build
+adds link-time optimization, per-function/data sections, linker dead-stripping,
+and symbol stripping, which drop unused FTXUI code from the final binary
+(≈360 KB vs ≈2.9 MB) — at the cost of a slower (LTO) build.
+
+### CMake (works on Windows, macOS, Linux)
 
 ```sh
-cmake -S . -B build      # configure
-cmake --build build      # compile -> build/dashboard (build/dashboard.exe on Windows)
-./build/dashboard        # run
+cmake -S . -B build                          # fast default (fetches FTXUI once)
+cmake --build build                          # -> build/dashboard (.exe on Windows)
+./build/dashboard
+
+# Optimized / small binary:
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
-On Windows this generates the right project for your toolchain (Visual Studio,
-MinGW, Ninja, …); no Unix shell required.
-
-### Make (Unix-like shells: Linux, macOS, MSYS2/Git Bash on Windows)
+### Make (delegates to CMake)
 
 ```sh
-make        # compile and link -> ./dashboard
-make run    # build, then run
-make clean  # remove obj/ and the binary
+make          # fast, unoptimized build -> build/dashboard
+make release  # optimized, size-minimized build (LTO + strip)
+make run      # fast build, then run
+make clean    # remove build/
 ```
 
-Requires a C++17 compiler. On first run, if `events.csv` is absent the program
-says so; it creates the file when you add or save events.
+On first run, if `events.csv` is absent the program says so; it creates the
+file when you add or save events.
 
 ## Data format
 
