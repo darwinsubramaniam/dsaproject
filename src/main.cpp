@@ -6,6 +6,7 @@
 // =====================================================================
 
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "dashboard.h"
@@ -13,16 +14,54 @@
 #include "event.h"
 #include "store.h"
 
+// Read an integer, re-prompting on non-numeric input. Returns false only when
+// the input stream is closed (Ctrl+D / end of a pipe); the caller should then
+// exit. (Ctrl+C terminates the program directly.)
+bool readInt(const std::string& prompt, int& value) {
+    while (true) {
+        std::cout << prompt;
+
+        if (std::cin >> value) {
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            return true;
+        }
+
+        if (std::cin.eof()) {
+            return false;
+        }
+
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "You entered wrong input. Please enter a number.\n";
+    }
+}
+
+// Prompt for a day/month/year and build a Date. Returns false on closed input.
+bool readDate(const std::string& label, Date& out) {
+    int day = 0;
+    int month = 0;
+    int year = 0;
+
+    if (!readInt(label + " day: ", day)) return false;
+    if (!readInt(label + " month: ", month)) return false;
+    if (!readInt(label + " year: ", year)) return false;
+
+    out = Date(day, month, year);
+    return true;
+}
+
 // ----------------------------- main ----------------------------------
 int main() {
     Dashboard dash;
-    Date today(6, 6, 2026);
+    const Date today = Date::today();
 
     store::load(dash);
 
-    int choice = 0;
+    bool running = true;
 
-    do {
+    while (running) {
+        int choice = 0;
+
         std::cout << "\n==========================================\n";
         std::cout << "          E-LEARNING DASHBOARD\n";
         std::cout << "==========================================\n";
@@ -42,9 +81,9 @@ int main() {
         std::cout << "10. Sort Events (date / subject / status)\n";
         std::cout << "11. Exit\n";
         std::cout << "------------------------------------------\n";
-        std::cout << " Enter your choice (1-11): ";
-        std::cin >> choice;
-        std::cin.ignore();
+        if (!readInt(" Enter your choice (1-11): ", choice)) {
+            break;  // input stream closed (Ctrl+D)
+        }
 
         switch (choice) {
         case 1: {
@@ -70,9 +109,6 @@ int main() {
             std::string title;
             std::string subject;
             std::string type;
-            int day = 0;
-            int month = 0;
-            int year = 0;
 
             std::cout << "Title: ";
             std::getline(std::cin, title);
@@ -83,17 +119,18 @@ int main() {
             std::cout << "Type: ";
             std::getline(std::cin, type);
 
-            std::cout << "Due day: ";
-            std::cin >> day;
+            Date dueDate;
+            if (!readDate("Due", dueDate)) {
+                running = false;
+                break;
+            }
 
-            std::cout << "Due month: ";
-            std::cin >> month;
+            if (!dueDate.isValid()) {
+                std::cout << "Invalid date. Event not added.\n";
+                break;
+            }
 
-            std::cout << "Due year: ";
-            std::cin >> year;
-            std::cin.ignore();
-
-            dash.addEvent(Event{title, subject, type, Date(day, month, year)});
+            dash.addEvent(Event{title, subject, type, dueDate});
             store::save(dash);
 
             std::cout << "Event added and saved to events.csv.\n";
@@ -101,24 +138,22 @@ int main() {
         }
         case 5: {
             std::string title;
-            int day = 0;
-            int month = 0;
-            int year = 0;
 
             std::cout << "Enter event title to amend: ";
             std::getline(std::cin, title);
 
-            std::cout << "New due day: ";
-            std::cin >> day;
+            Date newDate;
+            if (!readDate("New due", newDate)) {
+                running = false;
+                break;
+            }
 
-            std::cout << "New due month: ";
-            std::cin >> month;
+            if (!newDate.isValid()) {
+                std::cout << "Invalid date. Amendment cancelled.\n";
+                break;
+            }
 
-            std::cout << "New due year: ";
-            std::cin >> year;
-            std::cin.ignore();
-
-            dash.amendEvent(title, Date(day, month, year));
+            dash.amendEvent(title, newDate);
             store::save(dash);
 
             std::cout << "events.csv updated.\n";
@@ -162,9 +197,10 @@ int main() {
         case 10: {
             int sortChoice = 0;
 
-            std::cout << "Sort by 1. Date  2. Subject  3. Status: ";
-            std::cin >> sortChoice;
-            std::cin.ignore();
+            if (!readInt("Sort by 1. Date  2. Subject  3. Status: ", sortChoice)) {
+                running = false;
+                break;
+            }
 
             dash.sortEvents(sortChoice, today);
             break;
@@ -172,6 +208,7 @@ int main() {
         case 11: {
             store::save(dash);
             std::cout << "Events saved to events.csv. Goodbye!\n";
+            running = false;
             break;
         }
         default: {
@@ -180,7 +217,21 @@ int main() {
         }
         }
 
-    } while (choice != 11);
+        // After each action, ask whether to stay in the dashboard.
+        // Anything other than 'y' (including just Enter) exits.
+        if (running) {
+            std::cout << "\nContinue using the dashboard? (y/N): ";
+
+            std::string answer;
+            std::getline(std::cin, answer);
+
+            if (answer.empty() || (answer[0] != 'y' && answer[0] != 'Y')) {
+                store::save(dash);
+                std::cout << "Events saved to events.csv. Goodbye!\n";
+                running = false;
+            }
+        }
+    }
 
     return 0;
 }

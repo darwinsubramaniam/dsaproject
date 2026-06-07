@@ -37,12 +37,18 @@ void load(Dashboard& dash) {
 
     for (std::size_t i = 0; i < doc.GetRowCount(); i++) {
         try {
+            Date dueDate(doc.GetCell<int>("day", i),
+                         doc.GetCell<int>("month", i),
+                         doc.GetCell<int>("year", i));
+
+            if (!dueDate.isValid()) {
+                continue;  // skip rows with an impossible date (e.g. 31 Feb)
+            }
+
             Event e{doc.GetCell<std::string>("title", i),
                     doc.GetCell<std::string>("subject", i),
                     doc.GetCell<std::string>("type", i),
-                    Date(doc.GetCell<int>("day", i),
-                         doc.GetCell<int>("month", i),
-                         doc.GetCell<int>("year", i))};
+                    dueDate};
 
             if (hasCompleted) {
                 e.completed = (doc.GetCell<int>("completed", i) == 1);

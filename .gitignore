@@ -15,5 +15,5 @@ compile_commands.json
 *.d
 
 # Runtime data written by the program
-events.txt
+events.csv
 .cache/
