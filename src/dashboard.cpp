@@ -102,8 +102,7 @@ void Dashboard::checkDeadlines(const Date& today) {
     Node* current = head;
 
     while (current != nullptr) {
-        if (!current->data.completed &&
-            current->data.getStatus(today) == "Past Deadline" &&
+        if (current->data.status(today) == Event::Status::Overdue &&
             !alerts.contains(current->data.title)) {
             alerts.push(current->data.title);
         }
@@ -134,7 +133,7 @@ void Dashboard::displayTimeline(const Date& today) {
         printPadded(e.subject, 12);
         printPadded(e.type, 12);
         e.dueDate.display();
-        std::cout << "   " << e.getStatus(today) << "\n";
+        std::cout << "   " << e.statusLabel(today) << "\n";
 
         current = current->next;
         no++;
@@ -254,7 +253,7 @@ void Dashboard::sortEvents(int choice, const Date& today) const {
             } else if (choice == 2) {
                 choose = arr[j].subject < arr[selected].subject;
             } else if (choice == 3) {
-                choose = arr[j].statusRank(today) < arr[selected].statusRank(today);
+                choose = arr[j].status(today) < arr[selected].status(today);
             }
 
             if (choose) {
@@ -278,7 +277,7 @@ void Dashboard::sortEvents(int choice, const Date& today) const {
         printPadded(arr[i].subject, 12);
         printPadded(arr[i].type, 12);
         arr[i].dueDate.display();
-        std::cout << "   " << arr[i].getStatus(today) << "\n";
+        std::cout << "   " << arr[i].statusLabel(today) << "\n";
     }
 }
 

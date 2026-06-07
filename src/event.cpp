@@ -1,33 +1,28 @@
 #include "event.h"
 
-std::string Event::getStatus(const Date& today) const {
+Event::Status Event::status(const Date& today) const {
     if (completed) {
-        return "Completed";
+        return Status::Completed;
     }
 
     long diff = dueDate.toDayNumber() - today.toDayNumber();
-
-    if (diff < 0) {
-        return "Past Deadline";
-    } else if (diff == 0) {
-        return "Upcoming Today";
-    } else {
-        return "Upcoming (" + std::to_string(diff) + " days)";
-    }
+    return diff < 0 ? Status::Overdue : Status::Upcoming;
 }
 
-// Ordering key for "sort by status": overdue (0) first, then upcoming (1),
-// then completed (2) last.
-int Event::statusRank(const Date& today) const {
-    if (completed) {
-        return 2;
+std::string Event::statusLabel(const Date& today) const {
+    switch (status(today)) {
+        case Status::Completed:
+            return "Completed";
+        case Status::Overdue:
+            return "Past Deadline";
+        case Status::Upcoming: {
+            long diff = dueDate.toDayNumber() - today.toDayNumber();
+            if (diff == 0) {
+                return "Upcoming Today";
+            }
+            return "Upcoming (" + std::to_string(diff) + " days)";
+        }
     }
 
-    long diff = dueDate.toDayNumber() - today.toDayNumber();
-
-    if (diff < 0) {
-        return 0;
-    } else {
-        return 1;
-    }
+    return "";  // unreachable; all enumerators handled above
 }
