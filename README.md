@@ -57,7 +57,7 @@ MinGW, Ninja, …); no Unix shell required.
 ```sh
 make        # compile and link -> ./dashboard
 make run    # build, then run
-make clean  # remove build/ and the binary
+make clean  # remove obj/ and the binary
 ```
 
 Requires a C++17 compiler. On first run, if `events.csv` is absent the program

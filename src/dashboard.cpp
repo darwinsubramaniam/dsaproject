@@ -29,14 +29,14 @@ Dashboard::~Dashboard() {
 void Dashboard::addEvent(const Event& e) {
     Node* newNode = new Node(e);
 
-    if (head == nullptr || e.getDueDate().compareTo(head->data.getDueDate()) < 0) {
+    if (head == nullptr || e.dueDate.compareTo(head->data.dueDate) < 0) {
         newNode->next = head;
         head = newNode;
     } else {
         Node* current = head;
 
         while (current->next != nullptr &&
-               current->next->data.getDueDate().compareTo(e.getDueDate()) < 0) {
+               current->next->data.dueDate.compareTo(e.dueDate) < 0) {
             current = current->next;
         }
 
@@ -44,13 +44,13 @@ void Dashboard::addEvent(const Event& e) {
         current->next = newNode;
     }
 
-    reminders.enqueue(e.getTitle());
+    reminders.enqueue(e.title);
 }
 
 bool Dashboard::deleteEvent(const std::string& title) {
     Node* target = nullptr;
 
-    if (head != nullptr && head->data.getTitle() == title) {
+    if (head != nullptr && head->data.title == title) {
         target = head;
         head = head->next;
     } else {
@@ -58,7 +58,7 @@ bool Dashboard::deleteEvent(const std::string& title) {
 
         while (current != nullptr &&
                current->next != nullptr &&
-               current->next->data.getTitle() != title) {
+               current->next->data.title != title) {
             current = current->next;
         }
 
@@ -81,9 +81,9 @@ void Dashboard::amendEvent(const std::string& title, const Date& newDate) {
     Node* current = head;
 
     while (current != nullptr) {
-        if (current->data.getTitle() == title) {
+        if (current->data.title == title) {
             Event e = current->data;
-            e.setDueDate(newDate);
+            e.dueDate = newDate;
 
             deleteEvent(title);
             addEvent(e);
@@ -102,10 +102,10 @@ void Dashboard::checkDeadlines(const Date& today) {
     Node* current = head;
 
     while (current != nullptr) {
-        if (!current->data.isCompleted() &&
+        if (!current->data.completed &&
             current->data.getStatus(today) == "Past Deadline" &&
-            !alerts.contains(current->data.getTitle())) {
-            alerts.push(current->data.getTitle());
+            !alerts.contains(current->data.title)) {
+            alerts.push(current->data.title);
         }
 
         current = current->next;
@@ -130,10 +130,10 @@ void Dashboard::displayTimeline(const Date& today) {
         const Event& e = current->data;
 
         std::cout << no << "   ";
-        printPadded(e.getTitle(), 27);
-        printPadded(e.getSubject(), 12);
-        printPadded(e.getType(), 12);
-        e.getDueDate().display();
+        printPadded(e.title, 27);
+        printPadded(e.subject, 12);
+        printPadded(e.type, 12);
+        e.dueDate.display();
         std::cout << "   " << e.getStatus(today) << "\n";
 
         current = current->next;
@@ -151,18 +151,18 @@ void Dashboard::displayCalendar() const {
     long lastDate = -1;
 
     while (current != nullptr) {
-        long currentDate = current->data.getDueDate().toKey();
+        long currentDate = current->data.dueDate.toKey();
 
         if (currentDate != lastDate) {
             std::cout << "\n[ ";
-            current->data.getDueDate().display();
+            current->data.dueDate.display();
             std::cout << " ]\n";
             lastDate = currentDate;
         }
 
-        std::cout << "- " << current->data.getTitle()
-                  << " [" << current->data.getType() << "] "
-                  << current->data.getSubject() << "\n";
+        std::cout << "- " << current->data.title
+                  << " [" << current->data.type << "] "
+                  << current->data.subject << "\n";
 
         current = current->next;
     }
@@ -173,12 +173,12 @@ void Dashboard::searchEvent(const std::string& keyword) const {
     bool found = false;
 
     while (current != nullptr) {
-        if (current->data.getTitle() == keyword ||
-            current->data.getSubject() == keyword) {
-            std::cout << "Found: " << current->data.getTitle()
-                      << " | " << current->data.getSubject()
+        if (current->data.title == keyword ||
+            current->data.subject == keyword) {
+            std::cout << "Found: " << current->data.title
+                      << " | " << current->data.subject
                       << " | ";
-            current->data.getDueDate().display();
+            current->data.dueDate.display();
             std::cout << "\n";
 
             found = true;
@@ -196,15 +196,15 @@ void Dashboard::markComplete(const std::string& title) {
     Node* current = head;
 
     while (current != nullptr) {
-        if (current->data.getTitle() == title) {
-            if (current->data.isCompleted()) {
+        if (current->data.title == title) {
+            if (current->data.completed) {
                 std::cout << "Event is already completed.\n";
                 return;
             }
 
             // Keep the event for traceability; just flag it and stop
             // reminding about it.
-            current->data.setCompleted(true);
+            current->data.completed = true;
             reminders.clear(title);
             std::cout << "Event marked complete.\n";
             return;
@@ -250,9 +250,9 @@ void Dashboard::sortEvents(int choice, const Date& today) const {
             bool choose = false;
 
             if (choice == 1) {
-                choose = arr[j].getDueDate().compareTo(arr[selected].getDueDate()) < 0;
+                choose = arr[j].dueDate.compareTo(arr[selected].dueDate) < 0;
             } else if (choice == 2) {
-                choose = arr[j].getSubject() < arr[selected].getSubject();
+                choose = arr[j].subject < arr[selected].subject;
             } else if (choice == 3) {
                 choose = arr[j].statusRank(today) < arr[selected].statusRank(today);
             }
@@ -274,10 +274,10 @@ void Dashboard::sortEvents(int choice, const Date& today) const {
 
     for (int i = 0; i < count; i++) {
         std::cout << i + 1 << "   ";
-        printPadded(arr[i].getTitle(), 27);
-        printPadded(arr[i].getSubject(), 12);
-        printPadded(arr[i].getType(), 12);
-        arr[i].getDueDate().display();
+        printPadded(arr[i].title, 27);
+        printPadded(arr[i].subject, 12);
+        printPadded(arr[i].type, 12);
+        arr[i].dueDate.display();
         std::cout << "   " << arr[i].getStatus(today) << "\n";
     }
 }
@@ -298,15 +298,15 @@ void Dashboard::saveEventsToFile() const {
 
     for (Node* current = head; current != nullptr; current = current->next) {
         const Event& e = current->data;
-        const Date& d = e.getDueDate();
+        const Date& d = e.dueDate;
 
-        doc.SetCell<std::string>(0, row, e.getTitle());
-        doc.SetCell<std::string>(1, row, e.getSubject());
-        doc.SetCell<std::string>(2, row, e.getType());
+        doc.SetCell<std::string>(0, row, e.title);
+        doc.SetCell<std::string>(1, row, e.subject);
+        doc.SetCell<std::string>(2, row, e.type);
         doc.SetCell<int>(3, row, d.getDay());
         doc.SetCell<int>(4, row, d.getMonth());
         doc.SetCell<int>(5, row, d.getYear());
-        doc.SetCell<int>(6, row, e.isCompleted() ? 1 : 0);
+        doc.SetCell<int>(6, row, e.completed ? 1 : 0);
 
         row++;
     }

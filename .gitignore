@@ -1,5 +1,6 @@
 # Build output
 /build/
+/obj/
 /dashboard
 /dashboard.exe
 
@@ -15,3 +16,4 @@ compile_commands.json
 
 # Runtime data written by the program
 events.txt
+.cache/

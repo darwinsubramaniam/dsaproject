@@ -2,7 +2,7 @@ CXX       := g++
 CXXFLAGS  := -std=c++17 -Wall -Wextra -Wpedantic -Iinclude -isystem third_party -MMD -MP
 
 SRC_DIR   := src
-BUILD_DIR := build
+BUILD_DIR := obj
 TARGET    := dashboard
 
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)

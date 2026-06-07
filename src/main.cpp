@@ -37,15 +37,15 @@ void loadEventsFromFile(Dashboard& dash) {
 
     for (std::size_t i = 0; i < doc.GetRowCount(); i++) {
         try {
-            Event e(doc.GetCell<std::string>("title", i),
+            Event e{doc.GetCell<std::string>("title", i),
                     doc.GetCell<std::string>("subject", i),
                     doc.GetCell<std::string>("type", i),
                     Date(doc.GetCell<int>("day", i),
                          doc.GetCell<int>("month", i),
-                         doc.GetCell<int>("year", i)));
+                         doc.GetCell<int>("year", i))};
 
             if (hasCompleted) {
-                e.setCompleted(doc.GetCell<int>("completed", i) == 1);
+                e.completed = (doc.GetCell<int>("completed", i) == 1);
             }
 
             dash.addEvent(e);
@@ -137,7 +137,7 @@ int main() {
             std::cin >> year;
             std::cin.ignore();
 
-            dash.addEvent(Event(title, subject, type, Date(day, month, year)));
+            dash.addEvent(Event{title, subject, type, Date(day, month, year)});
             dash.saveEventsToFile();
 
             std::cout << "Event added and saved to events.csv.\n";
@@ -176,7 +176,7 @@ int main() {
 
             if (dash.deleteEvent(title)) {
                 dash.saveEventsToFile();
-                std::cout << "Event deleted and events.txt updated.\n";
+                std::cout << "Event deleted and events.csv updated.\n";
             } else {
                 std::cout << "Event not found.\n";
             }
