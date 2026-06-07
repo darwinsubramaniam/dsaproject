@@ -41,6 +41,7 @@ public:
 
     void showReminders() const;
     void showOverdue() const;
+    void showProgress(const Date& today) const;
 
     void sortEvents(int choice, const Date& today) const;
 

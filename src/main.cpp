@@ -79,9 +79,11 @@ int main() {
         std::cout << " 9. View Overdue Alerts (stack)\n";
         std::cout << " -- Sort Event --\n";
         std::cout << "10. Sort Events (date / subject / status)\n";
-        std::cout << "11. Exit\n";
+        std::cout << " -- Reports --\n";
+        std::cout << "11. Progress Report (completed vs pending)\n";
+        std::cout << "12. Exit\n";
         std::cout << "------------------------------------------\n";
-        if (!readInt(" Enter your choice (1-11): ", choice)) {
+        if (!readInt(" Enter your choice (1-12): ", choice)) {
             break;  // input stream closed (Ctrl+D)
         }
 
@@ -206,13 +208,18 @@ int main() {
             break;
         }
         case 11: {
+            std::cout << "\n===== PROGRESS REPORT =====\n";
+            dash.showProgress(today);
+            break;
+        }
+        case 12: {
             store::save(dash);
             std::cout << "Events saved to events.csv. Goodbye!\n";
             running = false;
             break;
         }
         default: {
-            std::cout << "Invalid choice. Please enter 1 to 11.\n";
+            std::cout << "Invalid choice. Please enter 1 to 12.\n";
             break;
         }
         }

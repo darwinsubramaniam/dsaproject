@@ -228,6 +228,51 @@ void Dashboard::showOverdue() const {
     alerts.display();
 }
 
+void Dashboard::showProgress(const Date& today) const {
+    int total = 0;
+    int completed = 0;
+    int overdue = 0;
+    int upcoming = 0;
+
+    for (Node* current = head; current != nullptr; current = current->next) {
+        total++;
+        switch (current->data.status(today)) {
+        case Event::Status::Completed:
+            completed++;
+            break;
+        case Event::Status::Overdue:
+            overdue++;
+            break;
+        case Event::Status::Upcoming:
+            upcoming++;
+            break;
+        }
+    }
+
+    if (total == 0) {
+        std::cout << "No events found.\n";
+        return;
+    }
+
+    const int pending = overdue + upcoming;
+    const int percent = completed * 100 / total;
+
+    std::cout << "Total events : " << total << "\n";
+    std::cout << "Completed    : " << completed << "\n";
+    std::cout << "Pending      : " << pending << "\n";
+    std::cout << "  - Overdue  : " << overdue << "\n";
+    std::cout << "  - Upcoming : " << upcoming << "\n";
+
+    const int width = 20;
+    const int filled = percent * width / 100;
+
+    std::cout << "\n[";
+    for (int i = 0; i < width; i++) {
+        std::cout << (i < filled ? '#' : '-');
+    }
+    std::cout << "] " << percent << "% complete\n";
+}
+
 void Dashboard::sortEvents(int choice, const Date& today) const {
     if (head == nullptr) {
         std::cout << "No events found.\n";
