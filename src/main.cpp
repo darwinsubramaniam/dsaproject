@@ -5,64 +5,20 @@
 // Entry point: loads events from events.csv and runs the menu loop.
 // =====================================================================
 
-#include <algorithm>
-#include <fstream>
 #include <iostream>
 #include <string>
-#include <vector>
 
 #include "dashboard.h"
 #include "date.h"
 #include "event.h"
-#include "rapidcsv.h"
-
-// ---------------------- Load from events.csv --------------------------
-// CSV columns: title,subject,type,day,month,year,completed
-// The "completed" column is optional (defaults to not completed).
-void loadEventsFromFile(Dashboard& dash) {
-    std::ifstream probe("events.csv");
-
-    if (!probe) {
-        std::cout << "events.csv not found.\n";
-        std::cout << "It will be created when you add or save events.\n";
-        return;
-    }
-    probe.close();
-
-    rapidcsv::Document doc("events.csv", rapidcsv::LabelParams(0, -1));
-
-    std::vector<std::string> columns = doc.GetColumnNames();
-    bool hasCompleted =
-        std::find(columns.begin(), columns.end(), "completed") != columns.end();
-
-    for (std::size_t i = 0; i < doc.GetRowCount(); i++) {
-        try {
-            Event e{doc.GetCell<std::string>("title", i),
-                    doc.GetCell<std::string>("subject", i),
-                    doc.GetCell<std::string>("type", i),
-                    Date(doc.GetCell<int>("day", i),
-                         doc.GetCell<int>("month", i),
-                         doc.GetCell<int>("year", i))};
-
-            if (hasCompleted) {
-                e.completed = (doc.GetCell<int>("completed", i) == 1);
-            }
-
-            dash.addEvent(e);
-        } catch (const std::exception&) {
-            continue;  // skip malformed rows
-        }
-    }
-
-    std::cout << "Events loaded from events.csv.\n";
-}
+#include "store.h"
 
 // ----------------------------- main ----------------------------------
 int main() {
     Dashboard dash;
     Date today(6, 6, 2026);
 
-    loadEventsFromFile(dash);
+    store::load(dash);
 
     int choice = 0;
 
@@ -138,7 +94,7 @@ int main() {
             std::cin.ignore();
 
             dash.addEvent(Event{title, subject, type, Date(day, month, year)});
-            dash.saveEventsToFile();
+            store::save(dash);
 
             std::cout << "Event added and saved to events.csv.\n";
             break;
@@ -163,7 +119,7 @@ int main() {
             std::cin.ignore();
 
             dash.amendEvent(title, Date(day, month, year));
-            dash.saveEventsToFile();
+            store::save(dash);
 
             std::cout << "events.csv updated.\n";
             break;
@@ -175,7 +131,7 @@ int main() {
             std::getline(std::cin, title);
 
             if (dash.deleteEvent(title)) {
-                dash.saveEventsToFile();
+                store::save(dash);
                 std::cout << "Event deleted and events.csv updated.\n";
             } else {
                 std::cout << "Event not found.\n";
@@ -189,7 +145,7 @@ int main() {
             std::getline(std::cin, title);
 
             dash.markComplete(title);
-            dash.saveEventsToFile();
+            store::save(dash);
 
             std::cout << "events.csv updated.\n";
             break;
@@ -214,7 +170,7 @@ int main() {
             break;
         }
         case 11: {
-            dash.saveEventsToFile();
+            store::save(dash);
             std::cout << "Events saved to events.csv. Goodbye!\n";
             break;
         }

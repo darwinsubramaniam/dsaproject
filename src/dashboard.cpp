@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "constants.h"
-#include "rapidcsv.h"
 
 void Dashboard::printPadded(const std::string& text, int width) const {
     std::cout << text;
@@ -281,38 +280,12 @@ void Dashboard::sortEvents(int choice, const Date& today) const {
     }
 }
 
-void Dashboard::saveEventsToFile() const {
-    // Build an in-memory CSV document (row 0 holds the column names) and let
-    // rapidcsv handle quoting/escaping on write.
-    rapidcsv::Document doc(std::string(), rapidcsv::LabelParams(0, -1));
-    doc.SetColumnName(0, "title");
-    doc.SetColumnName(1, "subject");
-    doc.SetColumnName(2, "type");
-    doc.SetColumnName(3, "day");
-    doc.SetColumnName(4, "month");
-    doc.SetColumnName(5, "year");
-    doc.SetColumnName(6, "completed");
-
-    int row = 0;
+std::vector<Event> Dashboard::events() const {
+    std::vector<Event> result;
 
     for (Node* current = head; current != nullptr; current = current->next) {
-        const Event& e = current->data;
-        const Date& d = e.dueDate;
-
-        doc.SetCell<std::string>(0, row, e.title);
-        doc.SetCell<std::string>(1, row, e.subject);
-        doc.SetCell<std::string>(2, row, e.type);
-        doc.SetCell<int>(3, row, d.getDay());
-        doc.SetCell<int>(4, row, d.getMonth());
-        doc.SetCell<int>(5, row, d.getYear());
-        doc.SetCell<int>(6, row, e.completed ? 1 : 0);
-
-        row++;
+        result.push_back(current->data);
     }
 
-    try {
-        doc.Save("events.csv");
-    } catch (const std::exception&) {
-        std::cout << "Error: Cannot save events.csv.\n";
-    }
+    return result;
 }

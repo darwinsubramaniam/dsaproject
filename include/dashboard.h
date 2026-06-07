@@ -2,6 +2,7 @@
 #define DASHBOARD_H
 
 #include <string>
+#include <vector>
 
 #include "date.h"
 #include "event.h"
@@ -42,7 +43,9 @@ public:
     void showOverdue() const;
 
     void sortEvents(int choice, const Date& today) const;
-    void saveEventsToFile() const;
+
+    // Snapshot of all events, in due-date order (for persistence).
+    std::vector<Event> events() const;
 };
 
 #endif  // DASHBOARD_H
